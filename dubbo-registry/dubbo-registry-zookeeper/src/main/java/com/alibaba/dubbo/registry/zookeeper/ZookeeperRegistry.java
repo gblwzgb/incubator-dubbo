@@ -107,6 +107,11 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     protected void doRegister(URL url) {
         try {
+            /**
+             * 将url注册至zookeeper
+             * 根据dynamic的值来确定是持久型的，还是短暂型的。
+             * 如果dynamic是true，则是短暂型的，否则就是持久型的。
+             */
             zkClient.create(toUrlPath(url), url.getParameter(Constants.DYNAMIC_KEY, true));
         } catch (Throwable e) {
             throw new RpcException("Failed to register " + url + " to zookeeper " + getUrl() + ", cause: " + e.getMessage(), e);

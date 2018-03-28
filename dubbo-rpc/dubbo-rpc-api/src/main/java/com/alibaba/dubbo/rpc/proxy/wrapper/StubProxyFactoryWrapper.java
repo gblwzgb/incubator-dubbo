@@ -46,6 +46,7 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
 
     private Protocol protocol;
 
+    // 像这种构造方法传接口的Wrapper，且定义在指定目录下，会被ExtensionLoader认为是包装类。
     public StubProxyFactoryWrapper(ProxyFactory proxyFactory) {
         this.proxyFactory = proxyFactory;
     }
@@ -100,6 +101,8 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
     }
 
     public <T> Invoker<T> getInvoker(T proxy, Class<T> type, URL url) throws RpcException {
+        // 该包装类并没有包装该方法。
+        // 这里的proxyFactory在ExtensionLoader内注入。
         return proxyFactory.getInvoker(proxy, type, url);
     }
 

@@ -44,7 +44,7 @@ public class JavassistProxyFactory extends AbstractProxyFactory {
                                       Object[] arguments) throws Throwable {
                 return wrapper.invokeMethod(proxy, methodName, parameterTypes, arguments);
             }
-        };
+        };  // 匿名类
     }
 
 }

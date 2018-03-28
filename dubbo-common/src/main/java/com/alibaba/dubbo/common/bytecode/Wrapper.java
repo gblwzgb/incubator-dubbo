@@ -103,11 +103,11 @@ public abstract class Wrapper {
     }
 
     private static Wrapper makeWrapper(Class<?> c) {
-        if (c.isPrimitive())
+        if (c.isPrimitive())  // 基本类型无法包装
             throw new IllegalArgumentException("Can not create wrapper for primitive type: " + c);
 
-        String name = c.getName();
-        ClassLoader cl = ClassHelper.getClassLoader(c);
+        String name = c.getName();  // 获取Class的全名：如cn.ucmed.service.xxximpl
+        ClassLoader cl = ClassHelper.getClassLoader(c);  // 获取当前线程的类加载器，获取不到就获取Class的类加载器
 
         StringBuilder c1 = new StringBuilder("public void setPropertyValue(Object o, String n, Object v){ ");
         StringBuilder c2 = new StringBuilder("public Object getPropertyValue(Object o, String n){ ");

@@ -359,26 +359,26 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
-        String name = protocolConfig.getName();
+        String name = protocolConfig.getName();  // 获取协议的名称，如dubbo,http,rmi
         if (name == null || name.length() == 0) {
-            name = "dubbo";
+            name = "dubbo";  // 缺省协议为dubbo
         }
 
         Map<String, String> map = new HashMap<String, String>();
-        map.put(Constants.SIDE_KEY, Constants.PROVIDER_SIDE);
-        map.put(Constants.DUBBO_VERSION_KEY, Version.getVersion());
-        map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
-        if (ConfigUtils.getPid() > 0) {
+        map.put(Constants.SIDE_KEY, Constants.PROVIDER_SIDE);  // 设置是服务方，还是消费方。
+        map.put(Constants.DUBBO_VERSION_KEY, Version.getVersion());  // 设置dubbo的版本号，如：2.8.4
+        map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));  // 设置时间戳
+        if (ConfigUtils.getPid() > 0) {  // TODO:不知道是干嘛的
             map.put(Constants.PID_KEY, String.valueOf(ConfigUtils.getPid()));
         }
-        appendParameters(map, application);
+        appendParameters(map, application);  // TODO:将application内有@Parameter注解的字段，put到map内。
         appendParameters(map, module);
         appendParameters(map, provider, Constants.DEFAULT_KEY);
         appendParameters(map, protocolConfig);
         appendParameters(map, this);
         if (methods != null && !methods.isEmpty()) {
-            for (MethodConfig method : methods) {
-                appendParameters(map, method, method.getName());
+            for (MethodConfig method : methods) {  // 遍历该Service待暴露的方法列表
+                appendParameters(map, method, method.getName());  // TODO:接下来的5行都要看下。
                 String retryKey = method.getName() + ".retry";
                 if (map.containsKey(retryKey)) {
                     String retryValue = map.remove(retryKey);
@@ -476,7 +476,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                     .getExtension(url.getProtocol()).getConfigurator(url).configure(url);
         }
 
-        String scope = url.getParameter(Constants.SCOPE_KEY);
+        String scope = url.getParameter(Constants.SCOPE_KEY);  // 获取URL的scope。
         // don't export when none is configured
         if (!Constants.SCOPE_NONE.toString().equalsIgnoreCase(scope)) {
 
@@ -487,21 +487,35 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             // export to remote if the config is not local (export to local only when config is local)
             if (!Constants.SCOPE_LOCAL.toString().equalsIgnoreCase(scope)) {
                 if (logger.isInfoEnabled()) {
+                    // 这句话告诉我们，service是暴露在URL上的
                     logger.info("Export dubbo service " + interfaceClass.getName() + " to url " + url);
                 }
                 if (registryURLs != null && !registryURLs.isEmpty()) {
-                    for (URL registryURL : registryURLs) {
-                        url = url.addParameterIfAbsent("dynamic", registryURL.getParameter("dynamic"));
+                    for (URL registryURL : registryURLs) {  // 遍历注册中心的地址
+                        url = url.addParameterIfAbsent("dynamic", registryURL.getParameter("dynamic"));  // 加上是不是动态的。
                         URL monitorUrl = loadMonitor(registryURL);
                         if (monitorUrl != null) {
                             url = url.addParameterAndEncoded(Constants.MONITOR_KEY, monitorUrl.toFullString());
                         }
                         if (logger.isInfoEnabled()) {
+                            // 注册xxx服务的url到注册中心的url。
                             logger.info("Register dubbo service " + interfaceClass.getName() + " url " + url + " to registry " + registryURL);
                         }
+                        /**
+                         * 1、将service的url拼接成字符串，放在URL实例的缓存里。
+                         * 2、把上述字符串encode后作为value，放入注册中心url的export参数内。
+                         * 3、调用ProxyFactory$Adaptive类的getInvoker方法，获取Invoker对象。
+                         *    调用顺序应该是；ProxyFactory$Adaptive->StubProxyFactoryWrapper->JavassistProxyFactory
+                         * 4、该Invoker应该是服务端的Skeleton
+                         */
                         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
                         DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
 
+                        /**
+                         * invoker里的URL对象的Protocol为registry
+                         * 调用顺序为：Protocol@Adaptive->ProtocolListenerWrapper->ProtocolFilterWrapper->RegistryProtocol
+                         * PS:这两个包装类啥都没干。。
+                         */
                         Exporter<?> exporter = protocol.export(wrapperInvoker);
                         exporters.add(exporter);
                     }
@@ -556,26 +570,26 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
         // if bind ip is not found in environment, keep looking up
         if (hostToBind == null || hostToBind.length() == 0) {
-            hostToBind = protocolConfig.getHost();
+            hostToBind = protocolConfig.getHost();  // 获取protocol的主机名host
             if (provider != null && (hostToBind == null || hostToBind.length() == 0)) {
-                hostToBind = provider.getHost();
+                hostToBind = provider.getHost();   // 如果protocol没有设置host，尝试从provider内获取主机名host
             }
-            if (isInvalidLocalHost(hostToBind)) {
+            if (isInvalidLocalHost(hostToBind)) {  // 检查一下host是否合规。不合规进入if内。
                 anyhost = true;
                 try {
-                    hostToBind = InetAddress.getLocalHost().getHostAddress();
+                    hostToBind = InetAddress.getLocalHost().getHostAddress(); // 用JDK的方法获取本机host
                 } catch (UnknownHostException e) {
                     logger.warn(e.getMessage(), e);
                 }
-                if (isInvalidLocalHost(hostToBind)) {
+                if (isInvalidLocalHost(hostToBind)) {  // 再次检查host是否合规。不合规进入下一个if内。
                     if (registryURLs != null && !registryURLs.isEmpty()) {
                         for (URL registryURL : registryURLs) {
                             try {
                                 Socket socket = new Socket();
                                 try {
                                     SocketAddress addr = new InetSocketAddress(registryURL.getHost(), registryURL.getPort());
-                                    socket.connect(addr, 1000);
-                                    hostToBind = socket.getLocalAddress().getHostAddress();
+                                    socket.connect(addr, 1000);  // 通过connect方法校验，成功连接，socket内就会有host，失败则被捕获。
+                                    hostToBind = socket.getLocalAddress().getHostAddress(); // 到这里说明ping通并获取了host。
                                     break;
                                 } finally {
                                     try {
@@ -588,8 +602,8 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                             }
                         }
                     }
-                    if (isInvalidLocalHost(hostToBind)) {
-                        hostToBind = getLocalHost();
+                    if (isInvalidLocalHost(hostToBind)) {  // 再次检查host是否合规。不合规进入下一个if内。
+                        hostToBind = getLocalHost();  // 遍历本地网卡，返回第一个合理的IP。实在没有则host=127.0.0.1
                     }
                 }
             }
@@ -606,6 +620,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             hostToRegistry = hostToBind;
         }
 
+        // 这里true表示host是dubbo生成的。
         map.put(Constants.ANYHOST_KEY, String.valueOf(anyhost));
 
         return hostToRegistry;
@@ -629,19 +644,20 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
         // if there's no bind port found from environment, keep looking up.
         if (portToBind == null) {
-            portToBind = protocolConfig.getPort();
+            portToBind = protocolConfig.getPort();  // 获取protocol内的端口号port
             if (provider != null && (portToBind == null || portToBind == 0)) {
-                portToBind = provider.getPort();
+                portToBind = provider.getPort();  // 如果protocol没有设置port，尝试从provider内获取端口号port
             }
+            // 获取扩展点内的默认端口号port，如DubboProtocol的默认端口号为20880，HttpProtocol的为80
             final int defaultPort = ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(name).getDefaultPort();
             if (portToBind == null || portToBind == 0) {
-                portToBind = defaultPort;
+                portToBind = defaultPort;  // 如果protocol和provider内都没有port，则使用默认端口号。
             }
             if (portToBind == null || portToBind <= 0) {
-                portToBind = getRandomPort(name);
+                portToBind = getRandomPort(name);  // 从Map<String,Integer>内获取端口号，没有则返回Integer的最小值。
                 if (portToBind == null || portToBind < 0) {
-                    portToBind = getAvailablePort(defaultPort);
-                    putRandomPort(name, portToBind);
+                    portToBind = getAvailablePort(defaultPort);  // 找一个大于defaultPort，小于65535的端口 TODO:这里可以学一下获取可用端口号的方法。
+                    putRandomPort(name, portToBind);  // 放入Map<String,Integer>，避免重复试端口。
                 }
                 logger.warn("Use random available port(" + portToBind + ") for protocol " + name);
             }

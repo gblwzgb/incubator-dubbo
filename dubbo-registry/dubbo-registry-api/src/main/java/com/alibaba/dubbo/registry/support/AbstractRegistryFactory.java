@@ -92,7 +92,7 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
             if (registry != null) {
                 return registry;
             }
-            registry = createRegistry(url);
+            registry = createRegistry(url);  // 工厂方法模式
             if (registry == null) {
                 throw new IllegalStateException("Can not create registry " + url);
             }

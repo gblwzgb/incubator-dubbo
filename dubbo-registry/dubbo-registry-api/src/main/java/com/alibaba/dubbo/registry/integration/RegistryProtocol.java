@@ -126,12 +126,14 @@ public class RegistryProtocol implements Protocol {
 
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
         //export invoker
+        // TODO:与ServiceConfig里的doLocalExport有何不同？
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
 
         URL registryUrl = getRegistryUrl(originInvoker);
 
         //registry provider
         final Registry registry = getRegistry(originInvoker);
+        // 这里获得注册中心看到的URL
         final URL registedProviderUrl = getRegistedProviderUrl(originInvoker);
 
         //to judge to delay publish whether or not

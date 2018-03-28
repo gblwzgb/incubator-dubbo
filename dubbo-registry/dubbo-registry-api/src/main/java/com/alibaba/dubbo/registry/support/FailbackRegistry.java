@@ -122,12 +122,12 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
     @Override
     public void register(URL url) {
-        super.register(url);
+        super.register(url);  // 让父类打下日志，并且用一个Set记录已经注册的url
         failedRegistered.remove(url);
         failedUnregistered.remove(url);
         try {
             // Sending a registration request to the server side
-            doRegister(url);
+            doRegister(url);  // 模板方法模式
         } catch (Exception e) {
             Throwable t = e;
 
@@ -146,7 +146,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             }
 
             // Record a failed registration request to a failed list, retry regularly
-            failedRegistered.add(url);
+            failedRegistered.add(url);  // FailbackRegistry类在构造的时候，创建了定时任务，处理失败列表
         }
     }
 

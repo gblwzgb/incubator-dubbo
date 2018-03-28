@@ -190,7 +190,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                     List<URL> urls = UrlUtils.parseURLs(address, map);
                     for (URL url : urls) {
                         url = url.addParameter(Constants.REGISTRY_KEY, url.getProtocol());
-                        url = url.setProtocol(Constants.REGISTRY_PROTOCOL);
+                        url = url.setProtocol(Constants.REGISTRY_PROTOCOL);   // 这里将URL的protocol设置为registry
                         if ((provider && url.getParameter(Constants.REGISTER_KEY, true))
                                 || (!provider && url.getParameter(Constants.SUBSCRIBE_KEY, true))) {
                             registryList.add(url);
